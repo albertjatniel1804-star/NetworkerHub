@@ -2,3 +2,5 @@ fastapi==0.141.1
 uvicorn[standard]
 jinja2
 sqlalchemy
+email-validator
+pwdlib[argon2]
