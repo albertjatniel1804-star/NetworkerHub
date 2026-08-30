@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 from app.database.dependencies import get_db
 from app.models.user import User
 from app.security.password import hash_password, verify_password
-from app.schemas.user import UserCreate
-
+from app.security.jwt import create_access_token
 from app.schemas.user import UserCreate, UserLogin
+from app.security.auth import get_current_user
+
 
 app = FastAPI(title="NetworkerHub")
 
@@ -18,6 +19,7 @@ app.mount(
     name="static"
 )
 
+
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -26,7 +28,6 @@ def home(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="index.html"
-
     )
 
 
@@ -38,7 +39,6 @@ def database_test(db: Session = Depends(get_db)):
 @app.get("/db/users/count")
 def users_count(db: Session = Depends(get_db)):
     total_users = db.query(User).count()
-
     return {"total_users": total_users}
 
 
@@ -92,8 +92,14 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             detail="Correo o contraseña incorrectos"
         )
 
+    access_token = create_access_token(
+        data={"sub": str(existing_user.id)}
+    )
+
     return {
         "message": "Inicio de sesión exitoso",
+        "access_token": access_token,
+        "token_type": "bearer",
         "user": {
             "id": existing_user.id,
             "name": existing_user.name,
@@ -114,3 +120,15 @@ def get_users(db: Session = Depends(get_db)):
         }
         for user in users
     ]
+
+
+@app.get("/profile")
+def profile(current_user: User = Depends(get_current_user)):
+    return {
+        "message": "Perfil del usuario",
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "email": current_user.email
+        }
+    }

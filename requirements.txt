@@ -4,3 +4,4 @@ jinja2
 sqlalchemy
 email-validator
 pwdlib[argon2]
+python-jose
