@@ -5,8 +5,10 @@ from sqlalchemy.orm import Session
 
 from app.database.dependencies import get_db
 from app.models.user import User
-from app.security.password import hash_password
+from app.security.password import hash_password, verify_password
 from app.schemas.user import UserCreate
+
+from app.schemas.user import UserCreate, UserLogin
 
 app = FastAPI(title="NetworkerHub")
 
@@ -66,6 +68,37 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         "id": new_user.id,
         "name": new_user.name,
         "email": new_user.email
+    }
+
+
+@app.post("/login")
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.email == user.email).first()
+
+    if not existing_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Correo o contraseña incorrectos"
+        )
+
+    password_correct = verify_password(
+        user.password,
+        existing_user.password
+    )
+
+    if not password_correct:
+        raise HTTPException(
+            status_code=401,
+            detail="Correo o contraseña incorrectos"
+        )
+
+    return {
+        "message": "Inicio de sesión exitoso",
+        "user": {
+            "id": existing_user.id,
+            "name": existing_user.name,
+            "email": existing_user.email
+        }
     }
 
 
